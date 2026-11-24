@@ -31,4 +31,21 @@ public class Wallet {
 
         balance = balance.add(amount);
     }
+
+    public void withdraw(BigDecimal amount) {
+
+        if ((amount == null)) {
+            throw new IllegalArgumentException(
+                    "Сумма списания не может быть null"
+            );
+        }
+
+        if (amount.compareTo(ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                    "Сумма списания должна быть больше нуля"
+            );
+        }
+        balance = balance.subtract(amount);
+
+    }
 }
