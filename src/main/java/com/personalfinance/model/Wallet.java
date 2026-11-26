@@ -169,4 +169,7 @@ public class Wallet {
 
     }
 
+    public boolean isBudgetExceeded(String categoryName) {
+        return getRemainingBudget(categoryName).compareTo(ZERO) < 0;
+    }
 }

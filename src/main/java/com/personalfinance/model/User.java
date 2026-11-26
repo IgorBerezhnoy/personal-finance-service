@@ -3,6 +3,7 @@ package com.personalfinance.model;
 public class User {
     private final String login;
     private final String password;
+    private final Wallet wallet;
 
     public User(String login, String password) {
         if (login == null || login.isBlank()) {
@@ -19,9 +20,18 @@ public class User {
 
         this.login = login;
         this.password = password;
+        this.wallet = new Wallet();
     }
 
     public String getLogin() {
         return login;
+    }
+
+    public Wallet getWallet() {
+        return wallet;
+    }
+
+    public boolean checkPassword(String candidate) {
+        return password.equals(candidate);
     }
 }
