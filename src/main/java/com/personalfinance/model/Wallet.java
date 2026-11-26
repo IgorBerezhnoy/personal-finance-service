@@ -1,20 +1,20 @@
 package com.personalfinance.model;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static java.math.BigDecimal.ZERO;
 
 public class Wallet {
     private BigDecimal balance;
     private final List<Transaction> transactions;
+    private final Map<String, Budget> budgets;
+
 
     public Wallet() {
         transactions = new ArrayList<>();
         balance = ZERO;
-
+        budgets = new HashMap<>();
     }
 
 
@@ -73,10 +73,26 @@ public class Wallet {
             withdraw(transaction.getAmount());
         } else {
             throw new IllegalArgumentException(
-                    "Операция типа: " + transaction.getType() + " поддерживается"
+                    "Операция типа: " + transaction.getType() + " не поддерживается"
             );
         }
         transactions.add(transaction);
+
+    }
+
+    public void addBudget(Budget budget) {
+        if (budget == null) {
+            throw new IllegalArgumentException(
+                    "Бюджет не может быть null"
+            );
+        }
+        String categoryName = budget.getCategory().getName();
+
+        if (budgets.containsKey(categoryName)) {
+            throw new IllegalArgumentException("Бюджет для категории " + categoryName + " уже существует");
+        }
+
+        budgets.put(categoryName, budget);
 
     }
 
@@ -103,4 +119,54 @@ public class Wallet {
 
         return sum;
     }
+
+
+    public Map<String, Budget> getBudgets() {
+        return Collections.unmodifiableMap(budgets);
+    }
+
+    public BigDecimal getExpensesByCategory(String categoryName) {
+        if (categoryName == null || categoryName.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Имя категории не может быть null"
+            );
+        }
+
+        BigDecimal sum = ZERO;
+
+
+        for (Transaction transaction : transactions) {
+            if (transaction.getType() == TransactionType.EXPENSE && transaction.getCategory().equals(categoryName)) {
+
+                sum = sum.add(transaction.getAmount());
+            }
+        }
+
+        return sum;
+
+    }
+
+    public BigDecimal getRemainingBudget(String categoryName) {
+
+        if (categoryName == null || categoryName.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Название категории не может быть пустым"
+            );
+        }
+
+        Budget budgetsForCategory = budgets.get(categoryName);
+
+        if (budgetsForCategory == null) {
+            throw new IllegalArgumentException(
+                    "Бюджет для категории '" + categoryName + "' не найден"
+            );
+        }
+
+        BigDecimal categoryLimit = budgetsForCategory.getLimit();
+        BigDecimal expensesForCategory = getExpensesByCategory(categoryName);
+
+        return categoryLimit.subtract(expensesForCategory);
+
+    }
+
 }

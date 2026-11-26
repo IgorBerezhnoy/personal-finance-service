@@ -4,11 +4,11 @@ import java.math.BigDecimal;
 
 import static java.math.BigDecimal.ZERO;
 
-public class CategoryBudget {
+public class Budget {
     private final Category category;
     private BigDecimal limit;
 
-    public CategoryBudget(Category category, BigDecimal limit) {
+    public Budget(Category category, BigDecimal limit) {
         if (category == null) {
             throw new IllegalArgumentException(
                     "Категория не может быть null"
