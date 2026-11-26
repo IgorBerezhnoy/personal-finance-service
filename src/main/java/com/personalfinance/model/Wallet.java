@@ -9,12 +9,13 @@ public class Wallet {
     private BigDecimal balance;
     private final List<Transaction> transactions;
     private final Map<String, Budget> budgets;
-
+    private final List<Category> categories;
 
     public Wallet() {
         transactions = new ArrayList<>();
         balance = ZERO;
         budgets = new HashMap<>();
+        categories = new ArrayList<>();
     }
 
 
@@ -172,4 +173,28 @@ public class Wallet {
     public boolean isBudgetExceeded(String categoryName) {
         return getRemainingBudget(categoryName).compareTo(ZERO) < 0;
     }
+
+
+    public List<Category> getCategories() {
+        return Collections.unmodifiableList(categories);
+    }
+
+    public void addCategory(Category category) {
+        if (category == null) {
+            throw new IllegalArgumentException(
+                    "Категория не может быть null"
+            );
+        }
+
+        categories.add(category);
+    }
+
+    public void removeCategory(Category category) {
+        if (!categories.remove(category)) {
+            throw new IllegalArgumentException(
+                    "Категория не найдена"
+            );
+        }
+    }
+
 }

@@ -12,6 +12,10 @@ public class Transaction {
     private final LocalDateTime createdAt;
 
     public Transaction(BigDecimal amount, TransactionType type, String category) {
+        this(amount, type, category, LocalDateTime.now());
+    }
+
+    public Transaction(BigDecimal amount, TransactionType type, String category, LocalDateTime createdAt) {
         if ((amount == null)) {
             throw new IllegalArgumentException(
                     "Сумма не может быть null"
@@ -35,11 +39,17 @@ public class Transaction {
             );
         }
 
+        if (createdAt == null) {
+            throw new IllegalArgumentException(
+                    "Дата операции не может быть null"
+            );
+        }
+
         this.amount = amount;
         this.type = type;
         this.category = category;
 
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = createdAt;
     }
 
     public TransactionType getType() {
