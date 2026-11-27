@@ -1,5 +1,6 @@
 package com.personalfinance.cli;
 
+import com.personalfinance.model.User;
 import com.personalfinance.persistence.JsonFileStorage;
 import com.personalfinance.service.AuthService;
 
@@ -34,7 +35,11 @@ public class ConsoleApp {
             }
 
             String command = scanner.nextLine().trim();
-            handleCommand(command);
+            try {
+                handleCommand(command);
+            } catch (NoSuchElementException e) {
+                isRunning = false;
+            }
         }
 
         authService.save(storage);
@@ -63,19 +68,54 @@ public class ConsoleApp {
     }
 
     private void handleRegister() {
-        System.out.println("Регистрация нового пользователя...");
+        System.out.println("Введите ваши данные для регистрации:");
+        System.out.println("Введите имя пользователя:");
+        String username = scanner.nextLine().trim();
+
+        System.out.println("Введите пароль:");
+        String password = scanner.nextLine();
+
+        try {
+            authService.register(username, password);
+            System.out.println("Регистрация прошла успешно.");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка регистрации: " + e.getMessage());
+        }
     }
 
     private void handleLogin() {
-        System.out.println("Вход в существующую учётную запись...");
+        System.out.println("Введите имя пользователя:");
+        String username = scanner.nextLine().trim();
+
+        System.out.println("Введите пароль:");
+        String password = scanner.nextLine();
+
+        try {
+            authService.login(username, password);
+            System.out.println("Вы успешно вошли в учётную запись.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            System.out.println("Ошибка входа: " + e.getMessage());
+        }
     }
 
     private void handleLogout() {
-        System.out.println("Выход из текущей учётной записи...");
+        if (authService.getCurrentUser() == null) {
+            System.out.println("Вы не авторизованы.");
+            return;
+        }
+
+        authService.logout();
+        System.out.println("Вы успешно вышли из учётной записи.");
     }
 
     private void handleShowBalance() {
-        System.out.println("Просмотр текущего баланса кошелька...");
+        User user = authService.getCurrentUser();
+        if (user == null) {
+            System.out.println("Сначала войдите в учётную запись");
+            return;
+        }
+
+        System.out.println("Текущий баланс: " + user.getWallet().getBalance().toPlainString());
     }
 
     private static void printHelp() {
