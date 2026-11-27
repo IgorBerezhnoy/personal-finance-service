@@ -1,5 +1,7 @@
 package com.personalfinance.model;
 
+import java.util.Locale;
+
 public class Category {
     private final String name;
     private final TransactionType type;
@@ -30,5 +32,11 @@ public class Category {
         return name;
     }
 
+    public static String normalizeName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Название категории не может быть пустым");
+        }
+        return name.strip().toLowerCase(Locale.ROOT);
+    }
 
 }

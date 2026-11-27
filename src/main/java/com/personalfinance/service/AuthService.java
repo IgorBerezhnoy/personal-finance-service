@@ -1,7 +1,9 @@
 package com.personalfinance.service;
 
 import com.personalfinance.model.User;
+import com.personalfinance.persistence.JsonFileStorage;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -83,6 +85,21 @@ public class AuthService {
 
     public Map<String, User> getUsers() {
         return Collections.unmodifiableMap(users);
+    }
+
+    public void save(JsonFileStorage storage) throws IOException {
+        storage.save(users.values());
+    }
+
+    public void load(JsonFileStorage storage) throws IOException {
+        Map<String, User> restored = new HashMap<>();
+        for (User user : storage.load()) {
+            restored.put(user.getLogin(), user);
+        }
+
+        users.clear();
+        users.putAll(restored);
+        currentUser = null;
     }
 
 }

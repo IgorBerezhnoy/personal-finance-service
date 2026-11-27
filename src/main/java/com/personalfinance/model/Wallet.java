@@ -89,7 +89,7 @@ public class Wallet {
         }
         String categoryName = budget.getCategory().getName();
 
-        if (budgets.containsKey(categoryName)) {
+        if (findBudget(categoryName) != null) {
             throw new IllegalArgumentException("Бюджет для категории " + categoryName + " уже существует");
         }
 
@@ -133,11 +133,13 @@ public class Wallet {
             );
         }
 
+        String normalizedName = Category.normalizeName(categoryName);
         BigDecimal sum = ZERO;
 
 
         for (Transaction transaction : transactions) {
-            if (transaction.getType() == TransactionType.EXPENSE && transaction.getCategory().equals(categoryName)) {
+            if (transaction.getType() == TransactionType.EXPENSE
+                    && Category.normalizeName(transaction.getCategory()).equals(normalizedName)) {
 
                 sum = sum.add(transaction.getAmount());
             }
@@ -155,7 +157,7 @@ public class Wallet {
             );
         }
 
-        Budget budgetsForCategory = budgets.get(categoryName);
+        Budget budgetsForCategory = findBudget(categoryName);
 
         if (budgetsForCategory == null) {
             throw new IllegalArgumentException(
@@ -174,6 +176,16 @@ public class Wallet {
         return getRemainingBudget(categoryName).compareTo(ZERO) < 0;
     }
 
+    private Budget findBudget(String categoryName) {
+        String normalizedName = Category.normalizeName(categoryName);
+        for (Budget budget : budgets.values()) {
+            if (Category.normalizeName(budget.getCategory().getName()).equals(normalizedName)) {
+                return budget;
+            }
+        }
+        return null;
+    }
+
 
     public List<Category> getCategories() {
         return Collections.unmodifiableList(categories);
@@ -186,7 +198,24 @@ public class Wallet {
             );
         }
 
+        if (findCategory(category.getName(), category.getType()) != null) {
+            throw new IllegalArgumentException("Категория '" + category.getName() + "' уже существует");
+        }
         categories.add(category);
+    }
+
+    public Category findCategory(String name, TransactionType type) {
+        String normalizedName = Category.normalizeName(name);
+        if (type == null) {
+            throw new IllegalArgumentException("Тип категории не может быть null");
+        }
+        for (Category category : categories) {
+            if (category.getType() == type
+                    && Category.normalizeName(category.getName()).equals(normalizedName)) {
+                return category;
+            }
+        }
+        return null;
     }
 
     public void removeCategory(Category category) {

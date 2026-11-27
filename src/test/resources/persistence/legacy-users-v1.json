@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "users": [
+    {
+      "login": "legacy-student",
+      "passwordHash": "D/FGe38rFAyKvZJtqIpDMH/tPQJIfq+9ol4+ujsgtJs=",
+      "passwordSalt": "cuKe3QwOA8AT1gatQwrX6Q==",
+      "wallet": {
+        "transactions": [
+          {"amount": "42.50", "type": "INCOME", "category": "Подарок", "createdAt": "2020-02-29T13:45:12.123456789"},
+          {"amount": "12.25", "type": "EXPENSE", "category": "Еда", "createdAt": "2020-03-01T13:45:12.123456789"}
+        ],
+        "categories": [
+          {"name": "Подарок", "type": "INCOME"},
+          {"name": "Еда", "type": "EXPENSE"}
+        ],
+        "budgets": [
+          {"categoryName": "Еда", "limit": "100.00"}
+        ]
+      }
+    }
+  ]
+}
