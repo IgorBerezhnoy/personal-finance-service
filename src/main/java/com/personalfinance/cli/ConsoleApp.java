@@ -1,9 +1,6 @@
 package com.personalfinance.cli;
 
-import com.personalfinance.model.Transaction;
-import com.personalfinance.model.TransactionType;
-import com.personalfinance.model.User;
-import com.personalfinance.model.Wallet;
+import com.personalfinance.model.*;
 import com.personalfinance.persistence.JsonFileStorage;
 import com.personalfinance.service.AuthService;
 
@@ -61,6 +58,10 @@ public class ConsoleApp {
             case "income" -> handleAddTransaction(TransactionType.INCOME);
             case "expense" -> handleAddTransaction(TransactionType.EXPENSE);
             case "transactions" -> handleShowTransactions();
+            case "category-add" -> handleAddCategory();
+            case "category-list" -> handleListCategories();
+            case "budget-set" -> handleSetBudget();
+            case "budget-list" -> handleListBudgets();
 
             case "exit" -> {
                 System.out.println("Завершение программы...");
@@ -164,16 +165,22 @@ public class ConsoleApp {
 
         Wallet wallet = user.getWallet();
 
-        boolean categoryExists = wallet.getCategories().stream()
-                .anyMatch(category ->
-                        category.getType() == type
-                                && category.getName().trim().equalsIgnoreCase(categoryName)
-                );
+        Category selectedCategory = null;
 
-        if (!categoryExists) {
+        for (Category category : wallet.getCategories()) {
+            if (category.getType() == type
+                    && category.getName().trim().equalsIgnoreCase(categoryName)) {
+                selectedCategory = category;
+                break;
+            }
+        }
+
+        if (selectedCategory == null) {
             System.out.println("Ошибка: такой категории нет. Сначала создайте категорию.");
             return;
         }
+
+        categoryName = selectedCategory.getName();
 
         try {
             Transaction transaction = new Transaction(amount, type, categoryName);
@@ -230,19 +237,188 @@ public class ConsoleApp {
         }
     }
 
+    private void handleAddCategory() {
+        User user = authService.getCurrentUser();
+
+        if (user == null) {
+            System.out.println("Сначала войдите в учётную запись.");
+            return;
+        }
+
+        System.out.print("Название категории: ");
+        String name = scanner.nextLine().trim();
+
+        System.out.print("Тип категории (income/expense): ");
+        String input = scanner.nextLine().trim().toLowerCase();
+
+        TransactionType type;
+
+        switch (input) {
+            case "income" -> type = TransactionType.INCOME;
+            case "expense" -> type = TransactionType.EXPENSE;
+            default -> {
+                System.out.println("Ошибка: укажите income или expense.");
+                return;
+            }
+        }
+
+        try {
+            Category category = new Category(type, name);
+            user.getWallet().addCategory(category);
+
+            System.out.println("Категория успешно добавлена!");
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+        }
+    }
+
+    private void handleListCategories() {
+        User user = authService.getCurrentUser();
+
+        if (user == null) {
+            System.out.println("Сначала войдите в учётную запись.");
+            return;
+        }
+
+        var categories = user.getWallet().getCategories();
+
+        if (categories.isEmpty()) {
+            System.out.println("Категорий пока нет.");
+            return;
+        }
+
+        System.out.println("Ваши категории:");
+
+        for (Category category : categories) {
+            String type = category.getType() == TransactionType.INCOME
+                    ? "Доход"
+                    : "Расход";
+
+            System.out.println("- " + category.getName() + " (" + type + ")");
+        }
+    }
+
+    private void handleSetBudget() {
+        User user = authService.getCurrentUser();
+
+        if (user == null) {
+            System.out.println("Сначала войдите в учётную запись.");
+            return;
+        }
+
+        Wallet wallet = user.getWallet();
+
+        System.out.print("Название категории расходов: ");
+        String name = scanner.nextLine().trim();
+
+        Category category = null;
+
+        for (Category item : wallet.getCategories()) {
+            if (item.getType() == TransactionType.EXPENSE
+                    && item.getName().trim().equalsIgnoreCase(name)) {
+                category = item;
+                break;
+            }
+        }
+
+        if (category == null) {
+            System.out.println("Ошибка: категория расходов не найдена.");
+            return;
+        }
+
+        System.out.print("Введите лимит бюджета: ");
+
+        BigDecimal limit;
+
+        try {
+            limit = new BigDecimal(scanner.nextLine().trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Ошибка: лимит должен быть числом.");
+            return;
+        }
+
+        if (limit.compareTo(BigDecimal.ZERO) < 0) {
+            System.out.println("Ошибка: лимит не может быть отрицательным.");
+            return;
+        }
+
+        try {
+            Budget existingBudget = null;
+
+            for (Budget budget : wallet.getBudgets().values()) {
+                if (budget.getCategory().getName()
+                        .trim().equalsIgnoreCase(category.getName())) {
+                    existingBudget = budget;
+                    break;
+                }
+            }
+
+            if (existingBudget == null) {
+                wallet.addBudget(new Budget(category, limit));
+                System.out.println("Бюджет успешно создан!");
+            } else {
+                existingBudget.setLimit(limit);
+                System.out.println("Лимит бюджета успешно изменён!");
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("Ошибка: " + e.getMessage());
+        }
+    }
+
+    private void handleListBudgets() {
+        User user = authService.getCurrentUser();
+
+        if (user == null) {
+            System.out.println("Сначала войдите в учётную запись.");
+            return;
+        }
+
+        Wallet wallet = user.getWallet();
+
+        if (wallet.getBudgets().isEmpty()) {
+            System.out.println("Бюджеты пока не установлены.");
+            return;
+        }
+
+        System.out.println("Ваши бюджеты:");
+
+        for (Budget budget : wallet.getBudgets().values()) {
+            String name = budget.getCategory().getName();
+
+            BigDecimal spent = wallet.getExpensesByCategory(name);
+            BigDecimal remaining = budget.getLimit().subtract(spent);
+
+            System.out.println("-------------------------");
+            System.out.println("Категория: " + name);
+            System.out.println("Лимит: " + budget.getLimit());
+            System.out.println("Потрачено: " + spent);
+            System.out.println("Осталось: " + remaining);
+
+            if (remaining.compareTo(BigDecimal.ZERO) < 0) {
+                System.out.println("ВНИМАНИЕ: бюджет превышен!");
+            }
+        }
+    }
+
     private static void printHelp() {
         System.out.println("""
                 Доступные команды:
-                  help         - Показать список команд и их назначение
-                  register     - Создать новую учётную запись
-                  login        - Войти в существующую учётную запись
-                  logout       - Выйти из текущей учётной записи
-                  balance      - Посмотреть текущий баланс кошелька
-                  income       - Добавить доход
-                  expense      - Добавить расход
-                  transactions - Показать историю операций
-                  exit         - Сохранить данные и завершить программу
+                  help          - Показать список команд
+                  register      - Зарегистрировать пользователя
+                  login         - Войти в учётную запись
+                  logout        - Выйти из учётной записи
+                  balance       - Посмотреть баланс кошелька
+                
+                  income        - Добавить доход
+                  expense       - Добавить расход
+                  transactions  - Посмотреть историю операций
+                
+                  category-add  - Создать категорию доходов или расходов
+                  category-list - Показать список категорий
+                
+                  budget-set    - Установить или изменить лимит расходов
+                  budget-list   - Показать бюджеты и оставшиеся средства
+                  exit          - Сохранить данные и завершить программу
                 """);
     }
-
 }
